@@ -151,7 +151,46 @@ jobs:
         run: python scripts/check_env.py
 
       - name: 灌入示例语料（首次会下载 embedding + reranker 模型，约 500MB）
+        # 不阻断后续步骤：即使这一步失败，也让"启动服务 + 验收"继续跑，
+        # 这样一次 CI 就能同时看到"模型能不能加载"与"验收能不能过"两组信息。
+        # 失败详情由下面的诊断步骤写入 Step Summary。
+        continue-on-error: true
         run: python scripts/seed_demo.py
+
+      - name: 灌库诊断（仅在失败时执行）
+        if: failure()
+        continue-on-error: true
+        run: |
+          {
+            echo "## 灌库失败诊断"
+            echo ""
+            echo "### .env 里的 HF 配置"
+            echo '```'
+            grep -n "^HF_" .env || echo "(没有 HF_ 开头的行)"
+            echo '```'
+            echo "### 模型缓存目录"
+            echo '```'
+            ls -la data/hf 2>/dev/null || echo "data/hf 不存在"
+            du -sh data/hf 2>/dev/null || true
+            echo '```'
+            echo "### 单独复现：加载 embedding 模型"
+            echo '```'
+            python - <<'PY' 2>&1 || true
+          import os, sys, traceback
+          sys.path.insert(0, '.')
+          os.environ['HF_HUB_OFFLINE'] = 'false'
+          print('HF_ENDPOINT =', os.environ.get('HF_ENDPOINT'))
+          print('HF_HOME     =', os.environ.get('HF_HOME'))
+          try:
+              from sentence_transformers import SentenceTransformer
+              m = SentenceTransformer('BAAI/bge-small-zh-v1.5', device='cpu')
+              v = m.encode(['连通性测试'], normalize_embeddings=True)
+              print('embedding OK, shape =', v.shape)
+          except Exception:
+              traceback.print_exc()
+          PY
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 启动服务
         run: |
@@ -164,6 +203,18 @@ jobs:
             sleep 2
           done
           curl -s http://127.0.0.1:8000/health
+
+      - name: 确保库里有语料（灌库失败时的兜底，走 HTTP 上传）
+        run: |
+          count=$(curl -s http://127.0.0.1:8000/api/documents | python -c "import sys,json; print(len(json.load(sys.stdin)))")
+          echo "当前文档数：$count"
+          if [ "$count" -eq 0 ]; then
+            echo "库里为空，改用 HTTP 上传示例文档…"
+            for f in sample_docs/*.md; do
+              curl -s -X POST http://127.0.0.1:8000/api/documents/upload -F "file=@$f" | head -c 200
+              echo
+            done
+          fi
 
       - name: 朴素链路分层验收（L0~L7）
         run: python scripts/verify_all.py http://127.0.0.1:8000
