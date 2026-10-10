@@ -132,16 +132,25 @@ jobs:
           pip install -r requirements.txt
           pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-      - name: 准备 .env（离线模式 + 允许 csv）
+      - name: 准备 .env（允许联网下载模型 + 允许 csv）
         run: |
           cp .env.example .env
-          # CI 无外网访问 huggingface 的稳定性，统一走镜像
-          sed -i 's|^HF_HUB_OFFLINE=.*|HF_HUB_OFFLINE=false|' .env || true
+          # 关键：HF_HUB_OFFLINE 的代码默认值是 true（国内防"联网校验被墙导致卡死"），
+          # 而 .env.example 里那一行是**注释状态**，所以 sed 替换注释行等于没改。
+          # CI 的模型缓存是空的，必须联网下载，因此这里用 >> 显式追加覆盖。
+          {
+            echo ""
+            echo "# ---- CI 覆盖（追加在末尾，pydantic-settings 取最后一个值）----"
+            echo "HF_HUB_OFFLINE=false"
+            echo "HF_ENDPOINT=https://huggingface.co"   # GitHub runner 在海外，用官方源
+          } >> .env
+          echo "--- .env 里的 HF 设置 ---"
+          grep -n "^HF_" .env
 
       - name: 配置自检
         run: python scripts/check_env.py
 
-      - name: 灌入示例语料（离线可跑，不需要 LLM key）
+      - name: 灌入示例语料（首次会下载 embedding + reranker 模型，约 500MB）
         run: python scripts/seed_demo.py
 
       - name: 启动服务
