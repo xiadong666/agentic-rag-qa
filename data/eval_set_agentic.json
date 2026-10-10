@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "name": "agentic-rag-eval-set",
+    "version": "1.0",
+    "scope_docs": ["rag原理速查", "langchain速查", "fastapi速查"],
+    "note": "标注集：expect_docs 是期望命中的文档标题；ref_keywords 是回答里必须出现（或语义等价）的要点；answerable=false 表示库里没有依据，正确行为是拒答/说明未找到。"
+  },
+  "cases": [
+    {
+      "id": "A1",
+      "type": "A-语义单跳",
+      "question": "混合检索为什么要用 RRF 融合，而不是直接比分数？",
+      "answerable": true,
+      "expect_docs": ["rag原理速查"],
+      "ref_keywords": ["名次", "1/(k+rank)", "分数尺度"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "A2",
+      "type": "A-语义单跳",
+      "question": "cross-encoder 重排和 bi-encoder 有什么区别，为什么重排更准？",
+      "answerable": true,
+      "expect_docs": ["rag原理速查"],
+      "ref_keywords": ["拼接", "互相看到", "更精细"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "B1",
+      "type": "B-精确词",
+      "question": "BM25 为什么需要文档长度归一化，公式里的 k1 和 b 各控制什么？",
+      "answerable": true,
+      "expect_docs": ["rag原理速查"],
+      "ref_keywords": ["词频饱和", "长度惩罚", "文档长度"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "B2",
+      "type": "B-精确词",
+      "question": "bge 向量使用时 query 侧要加什么指令，为什么？",
+      "answerable": true,
+      "expect_docs": ["langchain速查"],
+      "ref_keywords": ["指令", "检索相关文章", "不对称"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "C1",
+      "type": "C-同义改写",
+      "question": "怎么让系统上线跑起来，部署有哪些要点？",
+      "answerable": true,
+      "expect_docs": ["fastapi速查"],
+      "ref_keywords": ["uvicorn", "docker", "部署"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "C2",
+      "type": "C-同义改写",
+      "question": "服务端处理请求时遇到特别耗 CPU 的活儿该怎么安排？",
+      "answerable": true,
+      "expect_docs": ["fastapi速查"],
+      "ref_keywords": ["线程池", "阻塞", "to_thread"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "D1",
+      "type": "D-跨段综合",
+      "question": "我的知识库问答准确率不高，请给一份完整的排查思路：从分块参数、混合检索、重排到生成约束，分别该查什么？",
+      "answerable": true,
+      "expect_docs": ["rag原理速查", "langchain速查"],
+      "ref_keywords": ["分块", "混合检索", "重排", "约束"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "D2",
+      "type": "D-跨段综合",
+      "question": "给一份 RAG 系统上线的决策建议：知识库刷新、检索参数、幻觉防控分别怎么定？",
+      "answerable": true,
+      "expect_docs": ["rag原理速查", "fastapi速查"],
+      "ref_keywords": ["刷新", "检索", "幻觉"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "E1",
+      "type": "E-指代追问",
+      "question": "它为什么只对少量候选做，而不是全部？",
+      "pre_question": "cross-encoder 重排和 bi-encoder 有什么区别？",
+      "answerable": true,
+      "expect_docs": ["rag原理速查"],
+      "ref_keywords": ["慢", "代价", "候选"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "E2",
+      "type": "E-指代追问",
+      "question": "那中文场景的分隔符要怎么配？",
+      "pre_question": "中文文本分块应该怎么切？",
+      "answerable": true,
+      "expect_docs": ["langchain速查"],
+      "ref_keywords": ["标点", "分隔符", "中文"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "N1",
+      "type": "N-无答案(幻觉探针)",
+      "question": "我们公司 2025 年第三季度的营收是多少？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "easy"
+    },
+    {
+      "id": "N2",
+      "type": "N-无答案(幻觉探针)",
+      "question": "今天南京的天气怎么样，需要带伞吗？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "easy"
+    },
+    {
+      "id": "N3",
+      "type": "N-无答案(幻觉探针)",
+      "question": "库里那位负责部署的同事叫什么名字，他的工号是多少？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "easy"
+    },
+    {
+      "id": "N4",
+      "type": "N-无答案(幻觉探针)",
+      "question": "请给出本项目知识库在 2026 年双十一当天的线上 QPS 峰值和 P99 延迟。",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "medium"
+    },
+    {
+      "id": "N5",
+      "type": "N-无答案(幻觉探针)",
+      "question": "HNSW 索引里 efSearch 参数默认值是多少？库里有相关说明吗？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "hard"
+    }
+  ]
+}

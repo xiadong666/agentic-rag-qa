@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-10-04 14:41:01",
+  "set": "hard",
+  "n_cases": 18,
+  "baseline": {
+    "retrieval": {
+      "hit_at_1": 1.0,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "evidence_kw_recall": 0.9551,
+      "evidence_kw_full_hit": 0.8462,
+      "avg_evidence_chars": 1904
+    },
+    "answer": {
+      "correctness": 1.0,
+      "generation_accuracy": 0.6667,
+      "n_correct": 12,
+      "n_should_refuse": 6,
+      "n_fabricated": 0,
+      "n_false_refusal": 0,
+      "n_unknown": 0,
+      "n_no_evidence": 0
+    },
+    "hallucination": {
+      "rate": 0.0,
+      "n": 0,
+      "denominator": 18,
+      "false_answer_rate_on_unanswerable": 0.0,
+      "refusal_rate_on_unanswerable": 1.0,
+      "n_false_answer": 0,
+      "n_correct_refusal": 5
+    },
+    "cost": {
+      "avg_latency_ms": 14185,
+      "p50_latency_ms": 14405,
+      "total_prompt_tokens": 32917,
+      "total_completion_tokens": 4114,
+      "total_tokens": 37031,
+      "total_cost": 0.041145,
+      "avg_cost_per_query": 0.00228583,
+      "avg_llm_calls": 0.0
+    }
+  },
+  "agentic": {
+    "retrieval": {
+      "hit_at_1": 1.0,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "evidence_kw_recall": 0.9359,
+      "evidence_kw_full_hit": 0.7692,
+      "avg_evidence_chars": 3317
+    },
+    "answer": {
+      "correctness": 1.0,
+      "generation_accuracy": 0.7778,
+      "n_correct": 14,
+      "n_should_refuse": 4,
+      "n_fabricated": 0,
+      "n_false_refusal": 0,
+      "n_unknown": 0,
+      "n_no_evidence": 0
+    },
+    "hallucination": {
+      "rate": 0.0,
+      "n": 0,
+      "denominator": 18,
+      "false_answer_rate_on_unanswerable": 0.2,
+      "refusal_rate_on_unanswerable": 0.8,
+      "n_false_answer": 1,
+      "n_correct_refusal": 4
+    },
+    "cost": {
+      "avg_latency_ms": 64958,
+      "p50_latency_ms": 68061,
+      "total_prompt_tokens": 260527,
+      "total_completion_tokens": 23667,
+      "total_tokens": 284194,
+      "total_cost": 0.307861,
+      "avg_cost_per_query": 0.01710339,
+      "avg_llm_calls": 7.94
+    }
+  },
+  "delta": {
+    "hit_at_1": 0.0,
+    "recall_at_k": 0.0,
+    "mrr": 0.0,
+    "correctness": 0.0,
+    "hallucination_rate": 0.0,
+    "avg_latency_ms": 50773,
+    "avg_cost_per_query": 0.01481756
+  },
+  "note": "评测集：data/eval_set_hard.json（3 篇速查 + 1 篇 66 分块真实长文档，18 题含 5 道库外幻觉探针与 3 道多跳综合题）。生成命令：python scripts/eval_agentic.py --mode both --set data/eval_set_hard.json --top-k 4 --tag hard。agentic 侧有 1 例库外探针被计为作答：探针题问 DeepSeek 每百万 token 报价，回答先明确写了资料库中没有该数字、无法回答，随后补充了资料中与成本相关的线索，判官归为 correct（工程上属合格拒答，但比基线写法啰嗦）。"
+}

@@ -1,0 +1,142 @@
+# CI：Agentic RAG 知识库问答与决策系统
+
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:      # 支持手动触发，便于本地调试流水线
+
+jobs:
+  # ---------------------------------------------------------------
+  # 1) 静态检查：配置防静默失效 + 语法检查 + 密钥扫描
+  #    这三步都很快（秒级），放在最前面，出错能立刻定位
+  # ---------------------------------------------------------------
+  static:
+    name: 静态检查（配置 / 语法 / 密钥）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装最小依赖（配置检查只需要 pydantic-settings）
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pydantic>=2.7,<3.0" "pydantic-settings>=2.2,<3.0"
+
+      - name: 准备 .env（用示例文件，CI 里不需要真实 key）
+        run: cp .env.example .env
+
+      - name: 配置自检（.env 每一项都必须能被 Settings 识别）
+        run: python scripts/check_env.py --strict
+
+      - name: 语法检查（全项目 .py 可解析）
+        run: |
+          python - <<'PY'
+          import ast, pathlib, sys
+          bad = 0
+          for p in sorted(pathlib.Path(".").rglob("*.py")):
+              if any(x in str(p) for x in (".venv", "__pycache__")):
+                  continue
+              try:
+                  ast.parse(p.read_text(encoding="utf-8"))
+              except SyntaxError as e:
+                  bad += 1
+                  print(f"SYNTAX {p}:{e.lineno} {e.msg}")
+          print("syntax errors:", bad)
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: 密钥扫描（代码与文档里不得出现硬编码 sk-*）
+        run: |
+          if grep -rInE 'sk-[A-Za-z0-9]{20,}' \
+               --include='*.py' --include='*.js' --include='*.md' \
+               --include='*.json' --include='*.yml' --include='*.txt' \
+               --exclude-dir=.git . ; then
+            echo "::error::检测到疑似硬编码密钥，请改为从 .env / 环境变量读取"
+            exit 1
+          fi
+          echo "未发现硬编码密钥 ✓"
+
+  # ---------------------------------------------------------------
+  # 2) 端到端验收：起服务 → 灌语料 → 两层验收
+  #    只装 CPU 版 torch 与必要依赖；模型约 500MB，用缓存加速重复构建
+  # ---------------------------------------------------------------
+  e2e:
+    name: 端到端验收（分层验收 + Agent 决策层验收）
+    runs-on: ubuntu-latest
+    needs: static
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 缓存 HuggingFace 模型（embedding + reranker）
+        uses: actions/cache@v4
+        with:
+          path: data/hf
+          key: hf-${{ runner.os }}-bge-small-zh-v1.5-bce-reranker-base-v1
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: 准备 .env（离线模式 + 允许 csv）
+        run: |
+          cp .env.example .env
+          # CI 无外网访问 huggingface 的稳定性，统一走镜像
+          sed -i 's|^HF_HUB_OFFLINE=.*|HF_HUB_OFFLINE=false|' .env || true
+
+      - name: 配置自检
+        run: python scripts/check_env.py
+
+      - name: 灌入示例语料（离线可跑，不需要 LLM key）
+        run: python scripts/seed_demo.py
+
+      - name: 启动服务
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          # 等服务就绪（最多 120 秒）
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8000/health > /dev/null; then
+              echo "服务已就绪"; break
+            fi
+            sleep 2
+          done
+          curl -s http://127.0.0.1:8000/health
+
+      - name: 朴素链路分层验收（L0~L7）
+        run: python scripts/verify_all.py http://127.0.0.1:8000
+
+      - name: Agent 决策层验收（A0~A9）
+        run: python scripts/verify_agentic.py http://127.0.0.1:8000
+
+      - name: 困难语料灌库 + 检索验收（11/11 命中为通过）
+        run: |
+          python scripts/seed_hard_corpus.py --base http://127.0.0.1:8000 --purge --top-k 4
+
+      - name: 上传断言（CSV 必须被接受，防止配置回退）
+        run: |
+          curl -sf -X POST http://127.0.0.1:8000/api/documents/upload \
+            -F "file=@sample_docs/hard/07_线上问题登记表.csv" \
+            -F "title=CSV 上传回归" | tee /tmp/csv_upload.json
+          grep -q '"chunk_count"' /tmp/csv_upload.json
+          echo "CSV 上传正常 ✓"
+
+      - name: 失败时上传服务日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: "*.log"
+          if-no-files-found: ignore

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAG 知识库问答系统</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>📚 Agentic RAG 知识库问答与决策系统</h1>
+  <label class="switch" title="开启后走 Agent 编排：规划 → 多轮检索 → 相关性判定 → 反思改写 → 生成 → 忠实度自检">
+    <input type="checkbox" id="agentToggle" checked />
+    <span>Agent 模式</span>
+  </label>
+  <span class="status" id="statusDot"></span><span id="statusText">连接中…</span>
+</header>
+
+<main class="layout">
+  <!-- 左：知识库管理 -->
+  <aside class="panel kb">
+    <h2>① 知识库</h2>
+    <div class="uploader">
+      <input type="file" id="fileInput" multiple
+             accept=".pdf,.docx,.txt,.md" />
+      <button id="uploadBtn">上传并入库</button>
+      <p class="hint">支持 PDF / Word / TXT / Markdown，≤50MB</p>
+    </div>
+    <ul id="docList" class="doc-list"></ul>
+  </aside>
+
+  <!-- 中：对话区 -->
+  <section class="panel chat">
+    <h2>② 开始提问</h2>
+    <div id="chatBox" class="chat-box">
+      <div class="msg system">上传文档后，在这里提问。
+        <br/>回答中的 <b>[1]</b> 编号对应右侧“引用来源”。</div>
+    </div>
+    <div class="composer">
+      <textarea id="questionInput" rows="2"
+                placeholder="例如：怎么部署成 Web 服务？"></textarea>
+      <button id="sendBtn">发送</button>
+    </div>
+  </section>
+
+  <!-- 右：Agent 推理轨迹 + 引用来源 -->
+  <aside class="panel sources">
+    <h2>③ Agent 推理轨迹 <span id="traceCount"></span></h2>
+    <ol id="traceList" class="trace-list">
+      <li class="hint">开启 Agent 模式后，这里会实时显示：规划 → 检索 → 判定 → 反思改写 → 生成 → 忠实度自检</li>
+    </ol>
+    <h2>④ 引用来源 <span id="citeCount"></span></h2>
+    <ul id="sourceList" class="source-list"></ul>
+  </aside>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

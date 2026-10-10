@@ -1,0 +1,12 @@
+services:
+  rag-qa:
+    build: .
+    container_name: rag-qa
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env          # 复制 .env.example 为 .env 后填写 LLM_API_KEY
+    volumes:
+      - ./data:/app/data     # 知识库/索引/会话 持久化
+      - ./sample_docs:/app/sample_docs
+    restart: unless-stopped

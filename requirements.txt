@@ -1,0 +1,36 @@
+# ============================================================
+# RAG knowledge-base QA system - dependencies
+# Python 3.10 ~ 3.12 recommended (verified on 3.11)
+# NOTE: keep this file ASCII-only! pip on Windows decodes it
+# with the locale codepage (GBK), Chinese comments break install.
+# torch: install separately from the CPU index (see README).
+# ============================================================
+
+# ---- Web framework ----
+fastapi>=0.111,<1.0
+uvicorn[standard]>=0.30,<1.0
+python-multipart>=0.0.9,<1.0
+
+# ---- Config & validation ----
+pydantic>=2.7,<3.0
+pydantic-settings>=2.2,<3.0
+
+# ---- LangChain 1.2.x (1.x era; langchain-core pulled in automatically) ----
+langchain>=1.2,<1.3
+langchain-openai>=1.5,<2.0
+langchain-text-splitters>=1.0,<2.0
+
+# ---- Numerics & vector search ----
+numpy>=1.26,<3.0
+faiss-cpu>=1.8,<2.0
+
+# ---- Embedding / rerank (local models; first run downloads weights) ----
+sentence-transformers>=3.0,<5.0
+
+# ---- Document parsing ----
+pypdf>=4.0,<7.0
+python-docx>=1.1,<2.0
+jieba>=0.42,<1.0
+
+# ---- HTTP client (optional API rerank etc.) ----
+httpx>=0.27,<1.0

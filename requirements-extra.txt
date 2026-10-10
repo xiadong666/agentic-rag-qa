@@ -1,0 +1,14 @@
+# ============================================================
+# OPTIONAL extras（可选增强依赖：不装也能跑，装了才能启用对应功能）
+# 安装：.venv-rag\Scripts\python.exe -m pip install -r requirements-extra.txt
+# ============================================================
+
+# ---- Qdrant 向量库后端（VECTOR_BACKEND=qdrant 时需要）----
+#   本地模式（无需 Docker）：QDRANT_PATH=./data/qdrant
+#   服务模式：docker run -d -p 6333:6333 qdrant/qdrant  →  QDRANT_URL=http://localhost:6333
+qdrant-client>=1.9,<2.0
+
+# ---- PDF 语料生成（scripts/seed_hard_corpus.py --make-pdf 时需要）----
+#   用来把示例语料转成 PDF，验证"按页解析 + 引用精确到页码"这条链路。
+#   不装也能跑，只是 --make-pdf 会给出安装提示。
+reportlab>=4.0,<5.0

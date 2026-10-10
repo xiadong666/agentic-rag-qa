@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "name": "agentic-rag-hard-set",
+    "version": "1.0",
+    "note": "困难集：知识库含 4 篇文档（3 篇速查 + 1 篇 66 分块的《AI应用开发面试题库_RAG与Agent》）。期望文档是 66 分块那篇 —— 语料大、主题相近，单轮检索容易漏，正是 Agent 多轮改写 + 判定的用武之地。",
+    "scope_docs": ["AI应用开发面试题库_RAG与Agent"],
+    "extra_docs": ["docs/AI应用开发面试题库_RAG与Agent.txt"]
+  },
+  "cases": [
+    {
+      "id": "H1",
+      "type": "B-精确词",
+      "question": "你混合检索里 RRF 的 k 取多少？为什么不用加权求和？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["60", "名次", "不可比"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "H2",
+      "type": "B-精确词",
+      "question": "项目里 embedding 模型和 reranker 模型分别是什么、体积多大？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["bge-small-zh-v1.5", "95", "bce-reranker", "430"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "H3",
+      "type": "D-跨段综合",
+      "question": "你怎么证明「混合检索 + 重排」真的比只用向量检索更好？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["对照实验", "Recall", "MRR"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "H4",
+      "type": "D-跨段综合",
+      "question": "这套系统里「向量」和「原文出处」是怎么对应上的？如果对不上会出什么问题？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["下标", "JSONL", "FAISS"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "H5",
+      "type": "C-同义改写",
+      "question": "如果检索回来的片段全都不相关，你按什么顺序排查？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["检索", "分块", "排查"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "H6",
+      "type": "B-精确词",
+      "question": "手写 RRF 融合函数时，rank 从几开始、同一个 id 在两路里都出现要怎么处理？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["1", "累加", "降序"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "H7",
+      "type": "A-语义单跳",
+      "question": "GraphRAG 想解决什么问题，什么时候值得上？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["关系", "多跳"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "H8",
+      "type": "C-同义改写",
+      "question": "线上大模型接口偶尔超时或者被限流，你的调用层怎么扛？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["超时", "退避", "重试"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "H9",
+      "type": "D-跨段综合",
+      "question": "跨文档提问时，哪些查询改写手段能提高召回？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["改写", "多角度", "融合"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "H10",
+      "type": "C-同义改写",
+      "question": "如果向量库挂了、重排模型也加载不进来，系统还能不能继续用？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["降级", "BM25", "RRF"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "HN1",
+      "type": "N-无答案(幻觉探针)",
+      "question": "你们这套问答系统每天的调用量和线上 QPS 峰值是多少？",
+      "answerable": false,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": [],
+      "difficulty": "easy"
+    },
+    {
+      "id": "HN2",
+      "type": "N-无答案(幻觉探针)",
+      "question": "bge-small-zh-v1.5 一共支持多少种语言，多语言场景下表现如何？",
+      "answerable": false,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": [],
+      "difficulty": "medium"
+    },
+    {
+      "id": "HN3",
+      "type": "N-无答案(幻觉探针)",
+      "question": "这套系统跑完一遍验收脚本的耗时是多少秒？",
+      "answerable": false,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": [],
+      "difficulty": "medium"
+    },
+    {
+      "id": "HN4",
+      "type": "N-无答案(幻觉探针)",
+      "question": "你们用的 DeepSeek 接口每百万 token 的具体报价是多少？",
+      "answerable": false,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": [],
+      "difficulty": "easy"
+    },
+    {
+      "id": "HN5",
+      "type": "N-无答案(幻觉探针)",
+      "question": "团队里负责前端那位同学叫什么？他用了哪个框架？",
+      "answerable": false,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": [],
+      "difficulty": "easy"
+    },
+    {
+      "id": "M1",
+      "type": "D-跨段综合(多跳)",
+      "question": "同一批问题、同一套参数，为什么换一次评测就能看出效果差异？请把召回类指标的口径和它依赖的前提讲清楚。",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["Recall", "MRR", "标注", "对照"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "M2",
+      "type": "D-跨段综合(多跳)",
+      "question": "上下文里塞太多片段会有什么代价？如果既要控制长度又要保证回答有依据，你会怎么设计这一步？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["token", "压缩", "依据"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "M3",
+      "type": "D-跨段综合(多跳)",
+      "question": "如果上线后发现模型偶尔答得跟文档不一致，你会从哪几层把它定位出来？每层看什么指标？",
+      "answerable": true,
+      "expect_docs": ["AI应用开发面试题库_RAG与Agent"],
+      "ref_keywords": ["检索", "重排", "生成", "指标"],
+      "difficulty": "hard"
+    }
+  ]
+}

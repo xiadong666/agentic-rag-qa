@@ -1,0 +1,69 @@
+/* RAG / Agentic RAG 问答前端 —— 极简三栏，无任何前端框架 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  background: #f4f6f9; color: #223; height: 100vh; display: flex; flex-direction: column;
+}
+.topbar { display:flex; align-items:center; gap:12px; padding:12px 20px;
+  background:#fff; border-bottom:1px solid #e3e8ef; }
+.topbar h1 { font-size: 18px; }
+/* Agent 模式开关：两条链路的在线 A/B 开关 */
+.switch { display:flex; align-items:center; gap:5px; font-size:12px; color:#1e4b8f;
+  background:#eef4ff; border:1px solid #cfe0ff; border-radius:14px; padding:4px 10px;
+  cursor:pointer; user-select:none; }
+.switch input { cursor:pointer; }
+.status { width:9px; height:9px; border-radius:50%; background:#aaa; display:inline-block; }
+.status.ok { background:#2ecc71; } .status.err { background:#e74c3c; }
+#statusText { font-size: 12px; color:#888; }
+.layout { flex:1; display:grid; grid-template-columns: 280px 1fr 340px; gap:14px; padding:14px; min-height:0; }
+.panel { background:#fff; border:1px solid #e3e8ef; border-radius:10px; padding:14px;
+  display:flex; flex-direction:column; min-height:0; }
+.panel h2 { font-size:14px; margin-bottom:12px; color:#2c3e50; }
+.uploader { display:flex; flex-direction:column; gap:8px; }
+#fileInput { font-size: 12px; }
+button { background:#3b82f6; color:#fff; border:0; border-radius:6px; padding:8px 12px;
+  cursor:pointer; font-size:13px; }
+button:hover { background:#2f6fd6; }
+button:disabled { background:#b6c7e0; cursor:not-allowed; }
+.hint { font-size:11px; color:#999; }
+.doc-list { list-style:none; margin-top:12px; overflow:auto; flex:1; }
+.doc-list li { font-size:12px; padding:8px 6px; border-bottom:1px dashed #eee;
+  display:flex; justify-content:space-between; gap:6px; align-items:center; }
+.doc-list .meta { color:#999; }
+.doc-list button.del { background:none; color:#e74c3c; border:0; cursor:pointer; font-size:14px; }
+.chat-box { flex:1; overflow:auto; display:flex; flex-direction:column; gap:10px;
+  padding:4px; }
+.msg { max-width:85%; padding:9px 12px; border-radius:10px; font-size:13px;
+  line-height:1.65; white-space:pre-wrap; word-break:break-word; }
+.msg.user { align-self:flex-end; background:#3b82f6; color:#fff; }
+.msg.assistant { align-self:flex-start; background:#f0f4fb; }
+.msg.system { align-self:center; background:#fff7e6; color:#8a6d3b; font-size:12px; }
+.msg.error { align-self:center; background:#fdecea; color:#a33; font-size:12px; }
+.msg b.cite { color:#d35400; }
+.composer { display:flex; gap:8px; margin-top:10px; }
+#questionInput { flex:1; resize:none; border:1px solid #d5dce6; border-radius:8px;
+  padding:8px 10px; font-size:13px; font-family:inherit; }
+.source-list { list-style:none; overflow:auto; flex:1; }
+.source-list li { border:1px solid #e6ecf4; border-radius:8px; padding:8px;
+  margin-bottom:8px; font-size:12px; cursor:pointer; }
+.source-list li:hover { background:#f7fafd; }
+.source-list .src-title { font-weight:bold; color:#1e4b8f; margin-bottom:4px; }
+.source-list .src-snippet { color:#666; line-height:1.5; max-height:5.2em; overflow:hidden; }
+.source-list .src-score { color:#b07; font-size:11px; }
+
+/* ---------- Agent 推理轨迹 ---------- */
+.trace-list { list-style:none; overflow:auto; max-height:42%; margin-bottom:14px;
+  border-left:2px solid #e6ecf4; padding-left:10px; }
+.trace-item { font-size:12px; padding:5px 0; border-bottom:1px dashed #f0f0f0; }
+.trace-item:last-child { border-bottom:0; }
+.trace-title { color:#2c3e50; line-height:1.45; }
+.trace-detail { color:#8a94a6; font-size:11px; line-height:1.45; margin-top:2px;
+  word-break:break-word; }
+.trace-time { float:right; color:#b9c2d0; font-size:10px; }
+/* 不同步骤类型用左侧色条区分：规划/动作/判定/反思/校验 */
+.trace-plan .trace-title { color:#1e4b8f; font-weight:bold; }
+.trace-act { border-left:3px solid #3b82f6; padding-left:7px; margin-left:-10px; }
+.trace-grade { border-left:3px solid #f39c12; padding-left:7px; margin-left:-10px; }
+.trace-reflect { border-left:3px solid #9b59b6; padding-left:7px; margin-left:-10px; }
+.trace-verify { border-left:3px solid #27ae60; padding-left:7px; margin-left:-10px; }
+.trace-error { border-left:3px solid #e74c3c; padding-left:7px; margin-left:-10px; }

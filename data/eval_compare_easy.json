@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-10-04 15:17:30",
+  "set": "easy",
+  "n_cases": 15,
+  "baseline": {
+    "retrieval": {
+      "hit_at_1": 1.0,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "evidence_kw_recall": 0.7083,
+      "evidence_kw_full_hit": 0.4,
+      "avg_evidence_chars": 1449
+    },
+    "answer": {
+      "correctness": 1.0,
+      "generation_accuracy": 0.6,
+      "n_correct": 9,
+      "n_should_refuse": 6,
+      "n_fabricated": 0,
+      "n_false_refusal": 0,
+      "n_unknown": 0,
+      "n_no_evidence": 0
+    },
+    "hallucination": {
+      "rate": 0.0,
+      "n": 0,
+      "denominator": 15,
+      "false_answer_rate_on_unanswerable": 0.0,
+      "refusal_rate_on_unanswerable": 1.0,
+      "n_false_answer": 0,
+      "n_correct_refusal": 5
+    },
+    "cost": {
+      "avg_latency_ms": 5418,
+      "p50_latency_ms": 5131,
+      "total_prompt_tokens": 22679,
+      "total_completion_tokens": 2466,
+      "total_tokens": 25145,
+      "total_cost": 0.027611,
+      "avg_cost_per_query": 0.00184073,
+      "avg_llm_calls": 2.0
+    }
+  },
+  "agentic": {
+    "retrieval": {
+      "hit_at_1": 1.0,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "evidence_kw_recall": 0.675,
+      "evidence_kw_full_hit": 0.4,
+      "avg_evidence_chars": 1713
+    },
+    "answer": {
+      "correctness": 1.0,
+      "generation_accuracy": 0.6429,
+      "n_correct": 9,
+      "n_should_refuse": 6,
+      "n_fabricated": 0,
+      "n_false_refusal": 0,
+      "n_unknown": 0,
+      "n_no_evidence": 1
+    },
+    "hallucination": {
+      "rate": 0.0,
+      "n": 0,
+      "denominator": 15,
+      "false_answer_rate_on_unanswerable": 0.0,
+      "refusal_rate_on_unanswerable": 1.0,
+      "n_false_answer": 0,
+      "n_correct_refusal": 5
+    },
+    "cost": {
+      "avg_latency_ms": 26629,
+      "p50_latency_ms": 26227,
+      "total_prompt_tokens": 112754,
+      "total_completion_tokens": 16780,
+      "total_tokens": 129534,
+      "total_cost": 0.146314,
+      "avg_cost_per_query": 0.00975427,
+      "avg_llm_calls": 7.73
+    }
+  },
+  "delta": {
+    "hit_at_1": 0.0,
+    "recall_at_k": 0.0,
+    "mrr": 0.0,
+    "correctness": 0.0,
+    "hallucination_rate": 0.0,
+    "avg_latency_ms": 21211,
+    "avg_cost_per_query": 0.00791354
+  },
+  "note": "评测集：data/eval_set_agentic.json（3 篇速查文档，15 题含 5 道库外幻觉探针）。生成命令：python scripts/eval_agentic.py --mode both --tag easy。结论：基线本身已接近上限，Agent 在简单集上无回归（应答准确率 100%、幻觉率 0%、误答率 0%），生成层准确率略升。"
+}

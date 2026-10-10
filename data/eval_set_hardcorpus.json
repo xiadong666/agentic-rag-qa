@@ -1,0 +1,168 @@
+{
+  "meta": {
+    "name": "hard-corpus-eval-set",
+    "version": "1.0",
+    "note": "由 sample_docs/hard 的企业内部语料构建：7 篇文档 + 14 道题（含 3 道库外幻觉探针）。难点集中在精确标识符、版本冲突、长文埋点、口语 vs 术语、语义干扰、中英混排、结构化数据七类。scope_docs 限定在困难语料范围内，便于与 sample_docs 的简单文档混库时仍能算准指标。",
+    "scope_docs": [
+      "01_网关与鉴权接入说明",
+      "02_API变更记录",
+      "03_数据平台运维手册",
+      "04_支付服务接口规范",
+      "05_部署与发布SOP",
+      "06_Nexus_Gateway_Integration_Guide_EN",
+      "07_线上问题登记表"
+    ],
+    "extra_docs": [
+      "sample_docs/hard/01_网关与鉴权接入说明.md",
+      "sample_docs/hard/02_API变更记录.md",
+      "sample_docs/hard/03_数据平台运维手册.md",
+      "sample_docs/hard/04_支付服务接口规范.md",
+      "sample_docs/hard/05_部署与发布SOP.md",
+      "sample_docs/hard/06_Nexus_Gateway_Integration_Guide_EN.md",
+      "sample_docs/hard/07_线上问题登记表.csv"
+    ],
+    "source": "sample_docs/hard/test_cases.json"
+  },
+  "cases": [
+    {
+      "id": "E1",
+      "type": "B-精确词",
+      "question": "网关默认的超时时间是多少毫秒？",
+      "answerable": true,
+      "expect_docs": ["01_网关与鉴权接入说明"],
+      "ref_keywords": ["800"],
+      "difficulty": "hard",
+      "why": "文档里同时出现 5000（历史值）与 3000（示例值），只有 800 是默认值；考精确检索 + 抗干扰。"
+    },
+    {
+      "id": "E2",
+      "type": "B-精确词",
+      "question": "NX-3001 这个错误码是什么意思，客户端应该怎么处理？",
+      "answerable": true,
+      "expect_docs": ["01_网关与鉴权接入说明", "06_Nexus_Gateway_Integration_Guide_EN"],
+      "ref_keywords": ["429", "限流", "Retry-After"],
+      "difficulty": "hard",
+      "why": "错误码是精确标识符，BM25 字面命中才稳；中英两篇都有，取任一即可。"
+    },
+    {
+      "id": "E3",
+      "type": "D-版本冲突",
+      "question": "订单列表接口现在的分页参数叫什么？默认每页多少条？",
+      "answerable": true,
+      "expect_docs": ["02_API变更记录"],
+      "ref_keywords": ["cursor", "limit", "50"],
+      "difficulty": "hard",
+      "why": "v1 用 page/size，v1.5 改 offset/size，v2.0 才改 cursor/limit 且默认 50 —— 必须识别『最新版本为准』。"
+    },
+    {
+      "id": "E4",
+      "type": "D-版本冲突",
+      "question": "订单状态里 refunding 和 refunded 有什么区别？统计已退款应该用哪个？",
+      "answerable": true,
+      "expect_docs": ["02_API变更记录", "04_支付服务接口规范"],
+      "ref_keywords": ["refunding", "refunded", "终态"],
+      "difficulty": "hard",
+      "why": "两篇文档都涉及状态机，需要跨文档综合；且要区分『退款中』与『已退款』。"
+    },
+    {
+      "id": "E5",
+      "type": "D-长文埋点",
+      "question": "队列积压告警的触发阈值是多少，看到这个告警第一步做什么？",
+      "answerable": true,
+      "expect_docs": ["03_数据平台运维手册"],
+      "ref_keywords": ["10", "500", "pending"],
+      "difficulty": "hard",
+      "why": "答案在长文档第 6.1 节中部（前有 5 节铺垫），单轮 top-4 检索容易只命中前几节。"
+    },
+    {
+      "id": "E6",
+      "type": "C-同义改写",
+      "question": "表里数据量突然变少了很多，我该怎么处理？",
+      "answerable": true,
+      "expect_docs": ["03_数据平台运维手册"],
+      "ref_keywords": ["不要重跑", "业务量"],
+      "difficulty": "hard",
+      "why": "问题用口语（『数据量突然变少』），文档写的是『数据量突降告警』，且正确处置是『先确认再动手』。"
+    },
+    {
+      "id": "E7",
+      "type": "C-同义改写",
+      "question": "如果把这套服务发上线，怎么判断要不要回滚？",
+      "answerable": true,
+      "expect_docs": ["05_部署与发布SOP"],
+      "ref_keywords": ["0.5%", "P99", "回滚"],
+      "difficulty": "hard",
+      "why": "『发上线』对应文档的『发布/灰度』；同时有多篇文档讲上线（01/06 讲怎么接入），只有 05 有回滚判据 —— 考语义干扰下的精确路由。"
+    },
+    {
+      "id": "E8",
+      "type": "B-精确词",
+      "question": "签名用的字符串为什么要按 ASCII 升序排序，最后转成大写还是小写？",
+      "answerable": true,
+      "expect_docs": ["04_支付服务接口规范"],
+      "ref_keywords": ["大写", "HMAC-SHA256", "升序"],
+      "difficulty": "hard",
+      "why": "三个精确细节（排序方式、算法、大小写）必须都答对，漏一个就是错的。"
+    },
+    {
+      "id": "E9",
+      "type": "A-语义单跳",
+      "question": "退款的钱一般多久能到账？不同渠道有区别吗？",
+      "answerable": true,
+      "expect_docs": ["04_支付服务接口规范"],
+      "ref_keywords": ["微信", "支付宝", "工作日"],
+      "difficulty": "hard",
+      "why": "答案是三个渠道的时效区间，需要完整列举。"
+    },
+    {
+      "id": "E10",
+      "type": "F-结构化数据",
+      "question": "网关服务里最近一次可重试的错误是哪个？负责人是谁？",
+      "answerable": true,
+      "expect_docs": ["07_线上问题登记表"],
+      "ref_keywords": ["NX-4002", "平台组"],
+      "difficulty": "hard",
+      "why": "答案是 CSV 里按『服务名=网关服务 + 可重试=是 + 时间最新』筛选出来的，考结构化数据的条件检索。"
+    },
+    {
+      "id": "E11",
+      "type": "A-语义单跳",
+      "question": "AG 的令牌大概能用多久？",
+      "answerable": true,
+      "expect_docs": ["01_网关与鉴权接入说明", "06_Nexus_Gateway_Integration_Guide_EN"],
+      "ref_keywords": ["30"],
+      "difficulty": "hard",
+      "why": "问题用了不完整缩写『AG』，文档里写的是 AGT；考缩写/术语不匹配时的召回。"
+    },
+    {
+      "id": "E12",
+      "type": "N-无答案(幻觉探针)",
+      "question": "这套网关的授权年费是多少钱？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "hard",
+      "why": "语料里只有技术与流程信息，没有任何价格 —— 正确行为是明确拒答。"
+    },
+    {
+      "id": "E13",
+      "type": "N-无答案(幻觉探针)",
+      "question": "数据平台的 Spark 版本具体是多少？升级计划是怎样的？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "hard",
+      "why": "03 号文档只写了『Spark on YARN』，没有版本号与升级计划 —— 探针。"
+    },
+    {
+      "id": "E14",
+      "type": "N-无答案(幻觉探针)",
+      "question": "支付服务的商户密钥在哪里配置？默认值是什么？",
+      "answerable": false,
+      "expect_docs": [],
+      "ref_keywords": [],
+      "difficulty": "hard",
+      "why": "文档只讲签名算法要拼 `&key={商户密钥}`，从未说明密钥存放位置与默认值 —— 探针，考会不会顺手编一个『在 .env 里』。"
+    }
+  ]
+}
