@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     #    （本项目就这么踩过一次：CSV 上传被 400 拦掉，查了半天以为是解析器不支持）。
     #    所以字段名与环境变量**逐字一致**，不留 _raw / _str 这类后缀：
     #      allowed_extensions  →  .env 写 ALLOWED_EXTENSIONS
-    #      llm_task_routes_raw →  .env 写 LLM_TASK_ROUTES_RAW（这一项保留了后缀，因为 .env 里也是这么写的）
+    #    （同理：llm_task_routes 也必须在 .env 里写成 LLM_TASK_ROUTES。）
     allowed_extensions: str = "pdf,docx,txt,md,csv"  # 逗号分隔；扩展名与解析器能力对齐
 
     # ---------- 分块 ----------
@@ -87,7 +87,13 @@ class Settings(BaseSettings):
     # Agentic RAG 又拆出两档，体现"不同任务用不同模型"的治理思路：
     #   rewrite/grade/compress → small（高频、低价值，用小模型省钱）
     #   answer/memo            → default（最终交付物，用主模型保质量）
-    llm_task_routes_raw: str = "rewrite:small,answer:default,grade:small,verify:small,compress:small,memo:strong,agent:default"
+    #
+    # ⚠️ 字段名必须与 .env 变量名逐字一致（这里是 LLM_TASK_ROUTES）。
+    #    这一项曾经叫 llm_task_routes_raw，于是 .env 里写 LLM_TASK_ROUTES 会被
+    #    **静默忽略**（不报错、不警告，一直用代码默认值）——
+    #    与 allowed_extensions 那个坑完全同源，已统一改为不带后缀的命名。
+    #    解析成字典见下方 llm_task_route_map。
+    llm_task_routes: str = "rewrite:small,answer:default,grade:small,verify:small,compress:small,memo:strong,agent:default"
 
     # ---------- Token 统计与成本（AI 中台能力 2/2）----------
     # 单价：元 / 百万 token（按各厂商官网价格填写，仅用于成本估算）
@@ -168,10 +174,14 @@ class Settings(BaseSettings):
         return Path(self.qdrant_path) if self.qdrant_path else (self.data_dir / "qdrant")
 
     @property
-    def llm_task_routes(self) -> dict[str, str]:
-        """解析 'rewrite:small,answer:default' → {task: tier}。"""
+    def llm_task_route_map(self) -> dict[str, str]:
+        """解析 'rewrite:small,answer:default' → {task: tier}。
+
+        单独做成一个 property，是为了让 `llm_task_routes` 字段保持"字符串"形态
+        （这样才能从 .env 直接读），而调用方拿到的是解析好的字典。
+        """
         routes: dict[str, str] = {}
-        for item in self.llm_task_routes_raw.split(","):
+        for item in self.llm_task_routes.split(","):
             if ":" in item:
                 task, tier = item.split(":", 1)
                 routes[task.strip()] = tier.strip()

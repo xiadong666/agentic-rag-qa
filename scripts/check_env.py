@@ -25,9 +25,9 @@ sys.path.insert(0, str(ROOT))
 from app.config import ROOT_DIR, Settings  # noqa: E402
 
 
-def env_pairs() -> list[tuple[str, str, int]]:
-    """读 .env，返回 [(KEY, value, 行号)]（跳过注释与空行）。"""
-    path = ROOT_DIR / ".env"
+def env_pairs(path: Path | None = None) -> list[tuple[str, str, int]]:
+    """读 .env（或指定文件），返回 [(KEY, value, 行号)]（跳过注释与空行）。"""
+    path = path or (ROOT_DIR / ".env")
     if not path.exists():
         return []
     out: list[tuple[str, str, int]] = []
@@ -38,6 +38,34 @@ def env_pairs() -> list[tuple[str, str, int]]:
         k, v = s.split("=", 1)
         out.append((k.strip(), v.split("#")[0].strip(), i))
     return out
+
+
+def known_keys() -> set[str]:
+    """所有能被识别为配置项的键名（字段名 + alias，统一大写）。"""
+    known = {f.upper() for f in Settings.model_fields}
+    known |= {(fi.alias or "").upper() for fi in Settings.model_fields.values() if fi.alias}
+    return known
+
+
+def check_example_file(known: set[str]) -> list[str]:
+    """校验 .env.example 里的每个键都能被 Settings 识别。
+
+    为什么值得单独检查：
+        `.env.example` 是给使用者的"配置清单"，一旦它与代码字段名脱节，
+        用户照抄之后那一行**会被静默忽略**（pydantic-settings 不报错、不警告，
+        一直用代码默认值）。本项目真实踩过两次：
+          · allowed_extensions_raw  ↔ .env 写 ALLOWED_EXTENSIONS
+          · llm_task_routes_raw     ↔ .env 写 LLM_TASK_ROUTES
+        所以这条检查要长期留在 CI 里，当作"文档与代码一致性"的护栏。
+    """
+    path = ROOT_DIR / ".env.example"
+    if not path.exists():
+        return [".env.example 不存在（使用者没有可照抄的模板）"]
+    bad: list[str] = []
+    for key, value, line in env_pairs(path):
+        if key.upper() not in known:
+            bad.append(f"{path.name} 行{line}  {key} = {value[:40]}")
+    return bad
 
 
 def main() -> int:
@@ -57,6 +85,7 @@ def main() -> int:
 
     pairs = env_pairs()
     unknown = [(k, v, n) for k, v, n in pairs if k.upper() not in known]
+    example_bad = check_example_file(known)
 
     print(f"配置自检：{ROOT_DIR / '.env'}")
     print(f"  .env 有效配置项 {len(pairs)} 个 ｜ Settings 字段 {len(Settings.model_fields)} 个")
@@ -67,7 +96,16 @@ def main() -> int:
         print("    常见原因：字段名带 _raw/_str 等后缀，而 .env 里没写后缀（或反之）。")
         print("    处理：把字段名与 .env 变量名改成完全一致。")
     else:
-        print("\n  ✓ 所有配置项都能被识别")
+        print("\n  ✓ .env 里所有配置项都能被识别")
+
+    # 模板文件同样要校验：它是使用者照抄的对象，一旦与代码脱节就会埋下静默失效的坑
+    if example_bad:
+        print(f"\n  ✗ .env.example 有 {len(example_bad)} 个无法识别的配置项：")
+        for x in example_bad:
+            print(f"      {x}")
+        print("    处理：把模板里的变量名改成与 Settings 字段名一致（本项目已因此踩坑两次）。")
+    else:
+        print("  ✓ .env.example 里所有配置项都能被识别（模板与代码一致）")
 
     s = Settings()
     print("\n关键配置的实际取值（以此为准，而不是 .env 里写了什么）：")
@@ -112,7 +150,8 @@ def main() -> int:
     if not (s.llm_small_model or "").strip():
         print("\n提示：LLM_SMALL_MODEL 留空 → 规划/判定/改写/压缩仍走主模型（功能正常，但没省到成本）。")
 
-    if unknown and args.strict:
+    # --strict：任何"写了但不生效"的配置项都视为失败（.env 与 .env.example 都算）
+    if args.strict and (unknown or example_bad):
         return 1
     return 0
 

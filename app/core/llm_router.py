@@ -31,7 +31,7 @@ class LLMRouter:
         档位未配置时**向上回落**而不是报错：
         strong 没配就用 default，small 没配也用 default —— 降级可用性优先。
         """
-        tier = self.settings.llm_task_routes.get(task, "default")
+        tier = self.settings.llm_task_route_map.get(task, "default")
         if tier == "small":
             return self.settings.llm_small_model or self.settings.llm_model
         if tier == "strong":
@@ -54,6 +54,6 @@ class LLMRouter:
             "default_model": self.settings.llm_model,
             "small_model": self.settings.llm_small_model or self.settings.llm_model,
             "strong_model": self.settings.llm_strong_model or self.settings.llm_model,
-            "routes": self.settings.llm_task_routes,
+            "routes": self.settings.llm_task_route_map,
             "cached_clients": list(self._cache),
         }
