@@ -34,18 +34,31 @@ data/*
 *.log
 *.tmp
 ~$*
-_resume_*.docx
 *.b64
 _writeprobe.txt
 
-# 个人文件（简历生成器等，不属于本项目的交付内容）
-# 这些脚本依赖我本机的暂存目录与个人数据，留在仓库里对别人没有意义。
-# 如需保留版本管理，建议单独建一个简历仓库。
-scripts/build_resume_v*.py
-scripts/build_resume_changelog.py
-docs/AI应用开发实习简历_*.docx
-docs/*_一页速记卡.docx
-docs/AI应用开发校招面试题库_*.docx
+# ============================================================
+# 个人文件（不进本仓库）
+#   简历、针对具体岗位的题库/速记卡、以及它们的生成器。
+#   这些是求职材料，与本项目无关；如需版本管理请单独建一个"求职"仓库。
+#   注意：glob 里的 * 必须能匹配到变量后缀（曾因写了 `_v*.docx` 而漏掉
+#   `简历_v8_含中台能力.docx`，导致个人文件被提交——所以这里都用 `_*` 收口）。
+# ============================================================
+docs/AI应用开发实习简历_*
+docs/AI应用开发校招面试题库_*
+docs/J17813_*
+docs/gen/build_campus.py
+docs/gen/content_campus_*.py
+docs/gen/build_cheatsheet.py
+docs/gen/content_iq_*.py
+docs/gen/build_resume_*.py
+scripts/build_resume_*.py
+_resume_*.py
+_resume_*.docx
+
+# 沙箱 / 临时产物（下划线开头的辅助文件，如 docs/_writeprobe.txt、data/_srv_*.py）
+data/_*
+docs/_*
 
 # ============================================================
 # IDE / OS
