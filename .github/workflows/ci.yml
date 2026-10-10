@@ -34,33 +34,9 @@ jobs:
       - name: 配置自检（.env 每一项都必须能被 Settings 识别）
         run: python scripts/check_env.py --strict
 
-      - name: 语法检查（全项目 .py 可解析）
-        run: |
-          python - <<'PY'
-          import ast, pathlib, sys
-          bad = 0
-          for p in sorted(pathlib.Path(".").rglob("*.py")):
-              if any(x in str(p) for x in (".venv", "__pycache__")):
-                  continue
-              try:
-                  ast.parse(p.read_text(encoding="utf-8"))
-              except SyntaxError as e:
-                  bad += 1
-                  print(f"SYNTAX {p}:{e.lineno} {e.msg}")
-          print("syntax errors:", bad)
-          sys.exit(1 if bad else 0)
-          PY
-
-      - name: 密钥扫描（代码与文档里不得出现硬编码 sk-*）
-        run: |
-          if grep -rInE 'sk-[A-Za-z0-9]{20,}' \
-               --include='*.py' --include='*.js' --include='*.md' \
-               --include='*.json' --include='*.yml' --include='*.txt' \
-               --exclude-dir=.git . ; then
-            echo "::error::检测到疑似硬编码密钥，请改为从 .env / 环境变量读取"
-            exit 1
-          fi
-          echo "未发现硬编码密钥 ✓"
+      - name: 静态自检（语法 + 硬编码密钥 + 大文件）
+        # 与本地 `python scripts/check_syntax.py` 完全同一套逻辑，避免"本地过、CI 挂"
+        run: python scripts/check_syntax.py --verbose
 
   # ---------------------------------------------------------------
   # 2) 端到端验收：起服务 → 灌语料 → 两层验收

@@ -1,5 +1,15 @@
 # Agentic RAG 企业级知识库问答与决策系统（FastAPI + LangChain）
 
+[![ci](https://github.com/xiadong666/agentic-rag-qa/actions/workflows/ci.yml/badge.svg)](https://github.com/xiadong666/agentic-rag-qa/actions/workflows/ci.yml)
+[![python](https://img.shields.io/badge/python-3.10%20~%203.12-blue)](https://www.python.org/)
+[![fastapi](https://img.shields.io/badge/FastAPI-0.141-009688)](https://fastapi.tiangolo.com/)
+[![langchain](https://img.shields.io/badge/LangChain-1.2-1C3C3C)](https://python.langchain.com/)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+
+> CI 徽章指向 `xiadong666/agentic-rag-qa`。若你的仓库名或用户名不同，
+> 把徽章里的两处路径换成实际地址即可（推送到 GitHub 后徽章才会显示状态）。
+
 面向**找 AI 应用开发实习/工作**的完整教学项目，现在是 **Agentic RAG** 形态：
 
 > 朴素 RAG 是一条写死的流水线（检索一次 → 重排 → 生成）；本项目把它升级成**带决策的闭环**：

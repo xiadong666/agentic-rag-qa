@@ -1,0 +1,61 @@
+# ============================================================
+# EditorConfig：让不同编辑器写出风格一致的文件
+#   支持者：VS Code / PyCharm / Sublime / Vim / Visual Studio …
+#   作用：统一缩进、换行符、字符编码、行尾空格，避免"整文件 diff"
+# ============================================================
+root = true
+
+# ---------- 默认：UTF-8 + LF + 4 空格 ----------
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 120
+
+# ---------- Python ----------
+[*.py]
+indent_size = 4
+# 本项目有大量中文注释与文档字符串，行长放宽到 110
+max_line_length = 110
+
+# ---------- 前端与配置：2 空格 ----------
+[*.{js,json,yml,yaml,css,html}]
+indent_size = 2
+
+# ---------- Markdown：不要动行尾空格（两个空格 = 换行）----------
+[*.md]
+indent_size = 2
+trim_trailing_whitespace = false
+# 教程里有长表格与中文段落，不强行折行
+max_line_length = off
+
+# ---------- YAML：GitHub Actions 用 2 空格 ----------
+[*.{yml,yaml}]
+indent_size = 2
+
+# ---------- Windows 脚本必须 CRLF + BOM ----------
+# 原因：Windows PowerShell 5.1 读取 .ps1 时，若无 BOM 会按 ANSI 代码页（中文 Windows 上
+# 是 GBK）解码；文件里的中文会变乱码并直接导致语法错误（Missing closing '}' 之类）。
+# 带 BOM 后 5.1 与 7 都能正确识别。这个坑本项目真实踩过。
+[*.ps1]
+end_of_line = crlf
+charset = utf-8-bom
+indent_size = 4
+
+# ---------- Shell：LF + 2 空格 ----------
+[*.sh]
+end_of_line = lf
+indent_size = 2
+
+# ---------- 数据与产物：不要碰 ----------
+# 知识库原文、向量索引、评测报告都是机器生成的，手工格式化会破坏内容
+[*.{jsonl,csv,index,bin}]
+insert_final_newline = false
+trim_trailing_whitespace = false
+
+[*.docx]
+insert_final_newline = false
+trim_trailing_whitespace = false
