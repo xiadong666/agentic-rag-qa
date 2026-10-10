@@ -548,7 +548,7 @@ print('主库分块数 =', n)
     d.para("")
     d.para(f"文档生成日期：{date.today().isoformat()}　｜　"
            f"对应代码版本：rag-qa-system（Agentic RAG 改造版）　｜　"
-           f"配套文档：《改造全流程教程》《如何验证系统是正确的》《面试题库》",
+           f"配套文档：《改造全流程教程》《如何验证系统是正确的》",
            size=9, color=C_MUTED)
 
     out = Path(args.out)

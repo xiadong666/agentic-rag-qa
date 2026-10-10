@@ -1,6 +1,6 @@
 """向量库工厂：按配置返回 FAISS 或 Qdrant 实现（策略模式 + 优雅降级）。
 
-面试要点：
+设计要点：
 1. **面向接口编程**：engine 只依赖 add/search/clear/save/load/size 这套契约，
    换后端不用改业务代码；
 2. **降级策略**：Qdrant 依赖缺失或连不上时，自动回退 FAISS 并打警告 ——

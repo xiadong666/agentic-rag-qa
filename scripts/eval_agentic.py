@@ -1,6 +1,6 @@
 """Agentic RAG 量化评测：检索准确率 / 应答准确率 / 幻觉率（前后对比）。
 
-为什么写这个脚本（面试必答）：
+为什么写这个脚本（设计动机）：
     "我感觉改完更准了"不是证据。Agentic RAG 相对朴素 RAG 的收益必须量化：
     ① 检索层：期望文档是否进上下文、排在第几（Hit@1 / Recall@k / MRR）；
     ② 应答层：回答是否切题且被资料支持（LLM-as-Judge 三分类）；
@@ -528,7 +528,7 @@ async def seed_if_empty(engine, sample_dir: Path, titles: dict[str, str] | None 
 
     为什么必须固定语料：Recall@k / MRR 依赖"答案在哪篇文档里"，
     知识库一变，同一套标注集的期望文档就对不上了，指标也就不可比。
-    extra_docs 用于把真实长文档（如 66 分块的面试题库）也灌进来当干扰项/主语料。
+    extra_docs 用于把真实长文档（如 66 分块的技术规范）也灌进来当干扰项/主语料。
     """
     if engine.store.total_chunks() > 0:
         print(f"评测库已有 {len(engine.store.docs)} 篇文档 / {engine.store.total_chunks()} 分块，跳过灌库")

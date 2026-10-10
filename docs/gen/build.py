@@ -28,7 +28,10 @@ from content_p3 import add as add_p3  # noqa: E402
 from content_p4 import add as add_p4  # noqa: E402
 from content_p5 import add as add_p5  # noqa: E402
 from content_p6 import add as add_p6  # noqa: E402
-from content_p7_agentic import add as add_p7  # noqa: E402  改造后新增：Agentic 验收章节
+# 第八部分（Agentic RAG 验收章节）。原先这个模块放在 scripts/ 下，但它同时被
+# "面试题库"生成器复用，而题库属于个人求职材料、已移出本仓库，所以正文内联回
+# docs/gen/，让本目录成为自洽、可独立运行的文档生成目录（新克隆即可跑）。
+from content_p7_agentic import add as add_p7  # noqa: E402
 
 OUT = os.path.join(ROOT, "docs", "RAG知识库问答系统_学习巩固教程.docx")
 

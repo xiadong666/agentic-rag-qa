@@ -13,20 +13,21 @@ import sys
 
 GEN_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(GEN_DIR, "..", ".."))
-# 导入路径必须在 import 之前就绪：同目录（style + content_p6）+ 项目 scripts/（新增的 Agentic 章节）
-sys.path.insert(0, os.path.join(ROOT, "scripts"))
+# 导入路径必须在 import 之前就绪：本生成器只依赖同目录模块
+# （style + content_p6 + content_p7_agentic），不再依赖项目 scripts/，
+# 这样 docs/gen/ 可以独立运行，新克隆的仓库直接就能生成这三份 Word。
 sys.path.insert(0, GEN_DIR)
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH  # noqa: E402
 
 import style as S  # noqa: E402
 from content_p6 import add as add_verify  # noqa: E402
-from content_p7_agentic import add as add_agentic  # noqa: E402  改造后新增：Agent 决策层验收
+from content_p7_agentic import add as add_agentic  # noqa: E402  Agent 决策层验收章节
 
 OUT = os.path.join(ROOT, "docs", "如何验证RAG知识库问答系统是正确的.docx")
 
 TITLE = "如何验证 RAG 知识库问答系统是正确的"
-SUB = "分层验收方法 · 可运行验收脚本 · 量化检索指标 · 边界测试清单 · 面试话术 · 附：Agentic RAG 决策层验收"
+SUB = "分层验收方法 · 可运行验收脚本 · 量化检索指标 · 边界测试清单 · 附：Agentic RAG 决策层验收"
 
 
 def cover(doc):

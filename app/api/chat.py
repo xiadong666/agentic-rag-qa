@@ -40,7 +40,7 @@ def _engine(request):
 def _use_agent(engine, body) -> bool:
     """决定这次请求走哪条链路：请求级开关 > 全局配置。
 
-    为什么要留这个开关（面试可讲）：Agentic RAG 更准但更慢更贵；
+    为什么要留这个开关：Agentic RAG 更准但更慢更贵；
     真实系统里需要按场景路由（简单问答走朴素链路、复杂决策走 Agent），
     也需要能对同一问题做灰度与 A/B —— 所以链路选择必须是显式参数，而不是写死。
     """
@@ -224,7 +224,7 @@ async def agent_debug(request: Request, body: AgentRequest) -> AgentDebugRespons
 
 @router.get("/agent/tools", tags=["agent"])
 async def agent_tools(request: Request):
-    """列出 Agent 可用的工具（写给面试官/前端看的"能力清单"）。"""
+    """列出 Agent 可用的工具（供前端与运维查看的能力清单）。"""
     engine = _engine(request)
     state = AgentState(question="(tools)")
     return {

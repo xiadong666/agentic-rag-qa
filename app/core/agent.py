@@ -1,6 +1,6 @@
 """Agentic RAG 编排层：把「规划 → 检索 → 判定 → 反思/改写 → 生成 → 校验」写成显式状态机。
 
-为什么用显式状态机，而不是把决策全丢给 Function Calling 的 ReAct 循环（面试高频对比）：
+为什么用显式状态机，而不是把决策全丢给 Function Calling 的 ReAct 循环（核心设计取舍）：
 
     维度            朴素 RAG          裸 ReAct（全自主）        本项目：受控 Agentic RAG
     控制流          写死一条链        每步由 LLM 决定            框架固定 + 关键决策点交给 LLM

@@ -32,7 +32,7 @@ async def recent(request: Request, limit: int = Query(default=20, ge=1, le=200))
 
 @router.get("/routes")
 async def routes(request: Request):
-    """模型路由表：任务 → 模型档位（面试可直接展示“按任务选模型”）。"""
+    """模型路由表：任务 → 模型档位（可直接展示“按任务选模型”）。"""
     return _engine(request).router.describe()
 
 
