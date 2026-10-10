@@ -31,12 +31,50 @@ jobs:
       - name: 准备 .env（用示例文件，CI 里不需要真实 key）
         run: cp .env.example .env
 
+      - name: 打印环境信息（便于定位"本地过、CI 挂"类问题）
+        run: |
+          python -V
+          pip show pydantic pydantic-settings | grep -E "^(Name|Version)"
+          echo "--- .env 前 8 行（应无真实 key）---"
+          head -8 .env
+          echo "--- 工作目录与关键文件 ---"
+          pwd
+          ls -la .env app/config.py scripts/check_env.py
+
       - name: 配置自检（.env 每一项都必须能被 Settings 识别）
         run: python scripts/check_env.py --strict
 
       - name: 静态自检（语法 + 硬编码密钥 + 大文件）
         # 与本地 `python scripts/check_syntax.py` 完全同一套逻辑，避免"本地过、CI 挂"
         run: python scripts/check_syntax.py --verbose
+
+      - name: 失败时打印诊断（仅在前面步骤失败时执行）
+        # 目的：把真实的异常栈打出来。GitHub 日志接口需要鉴权，
+        # 而这一步让失败原因直接显示在网页日志里，省去反复试错。
+        if: failure()
+        run: |
+          echo "::group::Python import chain"
+          python -c "
+          import sys, traceback
+          sys.path.insert(0, '.')
+          print('sys.path[0:3] =', sys.path[0:3])
+          try:
+              from app.config import ROOT_DIR, Settings
+              print('import ok; ROOT_DIR =', ROOT_DIR)
+          except Exception:
+              traceback.print_exc()
+              raise SystemExit(0)
+          try:
+              s = Settings()
+              print('Settings() ok; data_dir =', s.data_dir)
+              print('allowed =', sorted(s.allowed_extension_set))
+          except Exception:
+              traceback.print_exc()
+          "
+          echo "::endgroup::"
+          echo "::group::check_env.py verbose"
+          python scripts/check_env.py || true
+          echo "::endgroup::"
 
   # ---------------------------------------------------------------
   # 2) 端到端验收：起服务 → 灌语料 → 两层验收
