@@ -3,15 +3,20 @@
 # Why a script: in the AI sandbox a child process cannot create .git inside the project,
 # so this step must run in YOUR own PowerShell window.
 #
-# ASCII-only on purpose: Windows PowerShell 5.1 decodes .ps1 using the ANSI code page
-# (GBK on Chinese Windows) unless the file has a UTF-8 BOM. Keeping the file ASCII-only
-# makes it parse correctly on every machine and locale.
+# ENCODING: this file is intentionally PURE ASCII.
+#   Windows PowerShell 5.1 decodes a .ps1 without a BOM using the ANSI code page
+#   (GBK/936 on Chinese Windows). If such a file contains Chinese text it gets
+#   mis-decoded -- worst case the WHOLE SCRIPT SILENTLY RUNS NOTHING while still
+#   returning exit code 0, which is painful to diagnose.
+#   Keeping this file ASCII-only makes it immune, so no BOM is required.
+#   (Other scripts in this repo that DO contain Chinese must be saved as UTF-8 with BOM;
+#    verify with: powershell -File tools\check_ps1.ps1 -Root scripts)
 #
 # Usage:
-#     cd D:\Deepseek\dsh\rag-qa-system
-#     powershell -ExecutionPolicy Bypass -File scripts\init_repo.ps1 -Name "Deng Hao" -Email "you@example.com"
+#     cd <project root>
+#     powershell -ExecutionPolicy Bypass -File scripts\init_repo.ps1 -Name "Your Name" -Email "you@example.com"
 #     # create the GitHub repo and push in one go (needs gh CLI + gh auth login):
-#     powershell -ExecutionPolicy Bypass -File scripts\init_repo.ps1 -Name "Deng Hao" -Email "you@example.com" -CreateRemote
+#     powershell -ExecutionPolicy Bypass -File scripts\init_repo.ps1 -CreateRemote
 
 param(
     [string]$Name = "",
@@ -28,8 +33,45 @@ Set-Location $root
 Write-Host "Project: $root" -ForegroundColor Cyan
 
 # ============================================================
-# 0) Safety check: never commit secrets or model caches
+# 0) stale lock guard
+#    An interrupted git command leaves .git/index.lock behind, and every later git
+#    call then fails with "Unable to create index.lock: Permission denied".
+#    That error looks like a permission problem but is usually just a stale file.
 # ============================================================
+$lock = Join-Path $root ".git\index.lock"
+if (Test-Path $lock) {
+    Write-Host "`nFound a stale git lock: $lock" -ForegroundColor Yellow
+    Write-Host "This usually means a previous git command was interrupted (Ctrl+C)." -ForegroundColor Yellow
+    $answer = Read-Host "Delete it and continue? [y/N]"
+    if ($answer -match '^[Yy]') {
+        Remove-Item $lock -Force
+        Write-Host "  lock removed." -ForegroundColor Green
+    } else {
+        Write-Host "  Aborted. Close any running git process, then delete the file manually." -ForegroundColor Red
+        exit 1
+    }
+}
+
+# ============================================================
+# 1) Safety check: never commit secrets or model caches
+#
+#    IMPORTANT: scan only files that WOULD BE COMMITTED, not everything on disk.
+#    A first version scanned the whole tree and flagged data/uploads/ (old test
+#    uploads containing a key) and data/hf/ (1.1 GB model cache) -- but both are
+#    already excluded by .gitignore, so reporting them was a false alarm that made
+#    people think they had to delete their data.
+#     => tracked files + untracked-but-not-ignored files.
+# ============================================================
+function Get-RepoTrackedFiles {
+    # -c core.quotepath=false: without it git escapes non-ASCII paths into
+    #   "...\232\204" style strings, which then blow up Test-Path with
+    #   "Illegal characters in path".
+    # -z + NUL split: keeps names containing spaces/specials intact.
+    $tracked = @(git -c core.quotepath=false ls-files -z) -split "`0" | Where-Object { $_ }
+    $untracked = @(git -c core.quotepath=false ls-files -z --others --exclude-standard) -split "`0" | Where-Object { $_ }
+    return @($tracked + $untracked | Sort-Object -Unique)
+}
+
 if (-not $SkipSafetyCheck) {
     Write-Host "`n=== Safety check ===" -ForegroundColor Cyan
     $problems = @()
@@ -37,9 +79,18 @@ if (-not $SkipSafetyCheck) {
     $ignored = git check-ignore -v .env 2>$null
     if (-not $ignored) { $problems += ".env is NOT ignored by .gitignore" }
 
-    $hits = Get-ChildItem -Recurse -File -Include *.py,*.js,*.json,*.md,*.yml,*.yaml,*.txt,*.ps1,*.sh |
-        Where-Object { $_.FullName -notmatch '\\(\.venv|\.venv-rag|node_modules|__pycache__|\.git)\\' } |
-        Select-String -Pattern 'sk-[A-Za-z0-9]{20,}' -ErrorAction SilentlyContinue
+    $files = Get-RepoTrackedFiles
+    Write-Host ("  scanning {0} file(s) that would be committed" -f $files.Count)
+
+    # ---- 1.1 hardcoded secrets (text files only) ----
+    $scanExt = @('.py', '.js', '.json', '.md', '.yml', '.yaml', '.txt', '.ps1', '.sh', '.toml', '.ini', '.css', '.html')
+    $hits = @()
+    foreach ($rel in $files) {
+        if (-not (Test-Path -LiteralPath $rel)) { continue }
+        if ($scanExt -notcontains [System.IO.Path]::GetExtension($rel).ToLower()) { continue }
+        $found = Select-String -LiteralPath $rel -Pattern 'sk-[A-Za-z0-9]{20,}' -ErrorAction SilentlyContinue
+        if ($found) { $hits += $found }
+    }
     if ($hits) {
         $problems += ("hardcoded secret found: {0} hit(s)" -f $hits.Count)
         $hits | Select-Object -First 5 | ForEach-Object {
@@ -47,14 +98,18 @@ if (-not $SkipSafetyCheck) {
         }
     }
 
-    $big = Get-ChildItem -Recurse -File | Where-Object {
-        $_.Length -gt 50MB -and $_.FullName -notmatch '\\(\.venv|\.venv-rag|\.git)\\'
+    # ---- 1.2 oversized files ----
+    $big = @()
+    foreach ($rel in $files) {
+        if (-not (Test-Path -LiteralPath $rel)) { continue }
+        $len = (Get-Item -LiteralPath $rel).Length
+        if ($len -gt 50MB) {
+            $big += ("{0} ({1} MB)" -f $rel, [Math]::Round($len / 1MB, 1))
+        }
     }
     if ($big) {
         $problems += "file larger than 50MB (should not be committed):"
-        $big | Select-Object -First 5 | ForEach-Object {
-            $problems += ("    {0} ({1} MB)" -f $_.FullName.Replace($root + '\', ''), [Math]::Round($_.Length / 1MB, 1))
-        }
+        $big | Select-Object -First 5 | ForEach-Object { $problems += ("    {0}" -f $_) }
     }
 
     if ($problems.Count) {
@@ -64,12 +119,13 @@ if (-not $SkipSafetyCheck) {
         exit 1
     }
     Write-Host "  OK: .env is ignored" -ForegroundColor Green
-    Write-Host "  OK: no hardcoded secret" -ForegroundColor Green
+    Write-Host "  OK: no hardcoded secret in files that would be committed" -ForegroundColor Green
     Write-Host "  OK: no oversized file" -ForegroundColor Green
+    Write-Host "  (data/uploads and data/hf are ignored by .gitignore, so they are skipped on purpose)" -ForegroundColor DarkGray
 }
 
 # ============================================================
-# 1) git identity
+# 2) git identity
 # ============================================================
 if ($Name) { git config user.name $Name }
 if ($Email) { git config user.email $Email }
@@ -83,7 +139,7 @@ if (-not $curName -or -not $curEmail) {
 Write-Host "`ngit identity: $curName <$curEmail>" -ForegroundColor Cyan
 
 # ============================================================
-# 2) init + commit
+# 3) init + commit
 # ============================================================
 if (-not (Test-Path ".git")) {
     Write-Host "`n=== git init ===" -ForegroundColor Cyan
@@ -94,7 +150,7 @@ if (-not (Test-Path ".git")) {
 
 git add -A
 Write-Host "`n=== Staged files ===" -ForegroundColor Cyan
-$staged = @(git diff --cached --name-only)
+$staged = @(git -c core.quotepath=false diff --cached --name-only)
 Write-Host ("  total: {0}" -f $staged.Count)
 $staged | Group-Object { ($_ -split '/')[0] } | Sort-Object Count -Descending |
     Select-Object -First 8 | ForEach-Object { Write-Host ("    {0,-16} {1,4}" -f $_.Name, $_.Count) }
@@ -106,8 +162,12 @@ if ($leak) {
     exit 1
 }
 
-$msgPath = Join-Path $env:TEMP "rag_commit_msg.txt"
-@'
+$pending = @(git status --porcelain)
+if ($pending.Count -eq 0) {
+    Write-Host "`nNothing to commit - repository already up to date." -ForegroundColor Cyan
+} else {
+    $msgPath = Join-Path $env:TEMP "rag_commit_msg.txt"
+    @'
 feat: Agentic RAG enterprise knowledge-base QA and decision system
 
 Upgrade the naive RAG pipeline (retrieve once -> rerank -> generate) into an agentic
@@ -141,24 +201,27 @@ Evaluation and acceptance
 - CI: static checks (config drift / syntax / secret scan) plus end-to-end acceptance
 
 Docs
-- Six Word deliverables: migration tutorial, hands-on lab manual, metrics card,
-  verification guide, learning tutorial, 190-question interview bank
+- Three Word deliverables: migration tutorial, verification guide, learning tutorial
+  (generated by scripts/build_agentic_rag_doc.py and docs/gen/build*.py)
+- Markdown sources: the two-part migration tutorial and a real config-drift
+  postmortem in docs/ (config silently ignored because the field name and the
+  .env variable name did not match)
 '@ | Set-Content -Path $msgPath -Encoding UTF8
 
-git commit -q -F $msgPath
-$commitOk = ($LASTEXITCODE -eq 0)
-Remove-Item $msgPath -Force -ErrorAction SilentlyContinue
-if (-not $commitOk) {
-    Write-Host "`nCommit failed, see git output above." -ForegroundColor Red
-    exit 1
+    git commit -q -F $msgPath
+    $commitOk = ($LASTEXITCODE -eq 0)
+    Remove-Item $msgPath -Force -ErrorAction SilentlyContinue
+    if (-not $commitOk) {
+        Write-Host "`nCommit failed, see git output above." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "`n=== Commit ===" -ForegroundColor Cyan
+    git log --oneline -1
+    git status --short | Select-Object -First 5
 }
 
-Write-Host "`n=== Commit ===" -ForegroundColor Cyan
-git log --oneline -1
-git status --short | Select-Object -First 5
-
 # ============================================================
-# 3) remote
+# 4) remote
 # ============================================================
 if ($RemoteUrl) {
     git remote remove origin 2>$null
@@ -167,17 +230,43 @@ if ($RemoteUrl) {
     Write-Host "Now run: git push -u origin main" -ForegroundColor Yellow
 }
 elseif ($CreateRemote) {
+    # winget installs gh, but the PATH of the CURRENT window is stale, so
+    # Get-Command cannot find it. Fall back to the known install locations.
     $gh = Get-Command gh -ErrorAction SilentlyContinue
-    if (-not $gh) {
+    $ghExe = if ($gh) { $gh.Source } else { $null }
+    if (-not $ghExe) {
+        $candidates = @(
+            (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links\gh.exe"),
+            (Join-Path $env:ProgramFiles "GitHub CLI\gh.exe"),
+            (Join-Path ${env:ProgramFiles(x86)} "GitHub CLI\gh.exe")
+        )
+        $ghExe = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        if ($ghExe) {
+            Write-Host "`ngh not on PATH but found at: $ghExe" -ForegroundColor DarkGray
+            Write-Host "(PATH in this window is stale after installing; using the full path instead)" -ForegroundColor DarkGray
+        }
+    }
+
+    if (-not $ghExe) {
         Write-Host "`ngh CLI not found, cannot create the remote automatically." -ForegroundColor Yellow
-        Write-Host "Option 1: install gh  ->  winget install --id GitHub.cli   then  gh auth login" -ForegroundColor Yellow
+        Write-Host "Option 1: install gh  ->  winget install --id GitHub.cli" -ForegroundColor Yellow
+        Write-Host "          then open a NEW PowerShell window (PATH refresh) and run: gh auth login" -ForegroundColor Yellow
         Write-Host "Option 2: create an empty repo on github.com, then run:" -ForegroundColor Yellow
         Write-Host "    git remote add origin https://github.com/<user>/$RepoName.git" -ForegroundColor Yellow
         Write-Host "    git push -u origin main" -ForegroundColor Yellow
         exit 0
     }
+
+    # Check login state first, otherwise gh repo create stops midway asking for a token.
+    & $ghExe auth status *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "`ngh is installed but not logged in. Run this first, then re-run the script:" -ForegroundColor Yellow
+        Write-Host "    & `"$ghExe`" auth login" -ForegroundColor Yellow
+        exit 0
+    }
+
     Write-Host "`nCreating GitHub repo '$RepoName' and pushing..." -ForegroundColor Cyan
-    gh repo create $RepoName --public --source=. --remote=origin --push `
+    & $ghExe repo create $RepoName --public --source=. --remote=origin --push `
         --description "Agentic RAG enterprise knowledge-base QA and decision system (FastAPI + LangChain)"
 }
 else {
