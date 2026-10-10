@@ -49,15 +49,24 @@ jobs:
         run: python scripts/check_syntax.py --verbose
 
       - name: 失败时打印诊断（仅在前面步骤失败时执行）
-        # 目的：把真实的异常栈打出来。GitHub 日志接口需要鉴权，
-        # 而这一步让失败原因直接显示在网页日志里，省去反复试错。
+        # 目的：把真实的异常栈打出来。GitHub 的日志下载接口需要鉴权，
+        # 所以这里同时把诊断写进 GITHUB_STEP_SUMMARY —— 那份摘要是公开可读的，
+        # 不需要 token 也能定位失败原因。
         if: failure()
         run: |
-          echo "::group::Python import chain"
-          python -c "
+          {
+            echo "## CI 失败诊断"
+            echo ""
+            echo "### Python 环境"
+            echo '```'
+            python -V
+            pip show pydantic pydantic-settings 2>/dev/null | grep -E "^(Name|Version)"
+            echo '```'
+            echo "### import app.config"
+            echo '```'
+            python - <<'PY' 2>&1 || true
           import sys, traceback
           sys.path.insert(0, '.')
-          print('sys.path[0:3] =', sys.path[0:3])
           try:
               from app.config import ROOT_DIR, Settings
               print('import ok; ROOT_DIR =', ROOT_DIR)
@@ -66,15 +75,33 @@ jobs:
               raise SystemExit(0)
           try:
               s = Settings()
-              print('Settings() ok; data_dir =', s.data_dir)
-              print('allowed =', sorted(s.allowed_extension_set))
+              print('Settings() ok')
           except Exception:
+              print('!! Settings() failed:')
               traceback.print_exc()
-          "
-          echo "::endgroup::"
-          echo "::group::check_env.py verbose"
-          python scripts/check_env.py || true
-          echo "::endgroup::"
+              print()
+              print('--- 逐字段定位（哪个字段解析失败）---')
+              for name in sorted(Settings.model_fields):
+                  try:
+                      Settings.model_validate({name: Settings.model_fields[name].default})
+                  except Exception as e:
+                      print(f'  {name}: {type(e).__name__}: {e}')
+              raise SystemExit(0)
+          try:
+              print('data_dir =', s.data_dir)
+              print('allowed_extension_set =', sorted(s.allowed_extension_set))
+              print('llm_ready =', s.llm_ready)
+          except Exception:
+              print('!! 访问属性时失败:')
+              traceback.print_exc()
+          PY
+            echo '```'
+            echo "### .env（前 10 行，示例文件，无真实 key）"
+            echo '```'
+            head -10 .env
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "诊断已写入 Step Summary"
 
   # ---------------------------------------------------------------
   # 2) 端到端验收：起服务 → 灌语料 → 两层验收
